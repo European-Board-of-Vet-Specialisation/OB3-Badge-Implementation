@@ -1,0 +1,52 @@
+// Sign the EBVS credential as an EdDSA VC-JWT for OBP.
+// Usage:
+//   1. Put your Ed25519 PRIVATE key value in EBVS_ED25519_D (base64url, the 'd' parameter)
+//   2. node sign-eddsa.mjs credential.json > credential.vc-jwt
+//
+// credential.json = the existing RS256 JWT's payload "vc" object, or the LD
+// credential JSON. This script handles both: it strips any "proof" and wraps
+// it in the same vc+claims shape your RS256 token used (which OBP parsed fine).
+
+import { SignJWT, importJWK } from 'jose';
+import { readFileSync } from 'fs';
+
+const D = process.env.EBVS_ED25519_D;
+if (!D) {
+  console.error('Set EBVS_ED25519_D to the Ed25519 private key (base64url "d" value) for key-3');
+  process.exit(1);
+}
+
+// Public half must match https://did.help.ebvs.eu/keys/key-3
+const privateJwk = {
+  kty: 'OKP',
+  crv: 'Ed25519',
+  x: 'P7F9zs6KA7sA_W0Ta5Gj769NkoAhj458Lf1-YLf-bp0',
+  d: D,
+};
+
+const input = JSON.parse(readFileSync(process.argv[2] ?? 'credential.json', 'utf8'));
+
+// Accept either the bare credential or a {vc: ...} wrapper; strip LD proof.
+const vc = structuredClone(input.vc ?? input);
+delete vc.proof;
+
+const subjectId = vc.credentialSubject?.id;
+const credentialId = vc.id ?? '';
+const jti = credentialId.split('/').pop();
+
+const key = await importJWK(privateJwk, 'EdDSA');
+
+const jwt = await new SignJWT({ vc })
+  .setProtectedHeader({
+    alg: 'EdDSA',
+    typ: 'vc+jwt',
+    kid: 'https://did.help.ebvs.eu/keys/key-3',
+  })
+  .setIssuer(vc.issuer?.id ?? vc.issuer)
+  .setSubject(subjectId)
+  .setJti(jti)
+  .setIssuedAt()
+  .setNotBefore(Math.floor(Date.parse(vc.validFrom) / 1000))
+  .sign(key);
+
+process.stdout.write(jwt);
