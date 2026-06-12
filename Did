@@ -1,0 +1,35 @@
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/jws-2020/v1",
+    "https://w3id.org/security/multikey/v1"
+  ],
+  "id": "did:web:did.example.org",
+  "verificationMethod": [
+    {
+      "id": "did:web:did.example.org#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:did.example.org",
+      "publicKeyJwk": {
+        "kid": "did:web:did.example.org#key-1",
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "P7F9zs6KA7sA_W0Ta5Gj769NkoAhj458Lf1-YLf-bp0",
+        "alg": "EdDSA",
+        "use": "sig"
+      }
+    },
+    {
+      "id": "did:web:did.example.org#key-1-multikey",
+      "type": "Multikey",
+      "controller": "did:web:did.example.org",
+      "publicKeyMultibase": "z6Mkijthq5m9hipM7AwYRBiuh2AYTornpZrRS2kX2XTt7fJC"
+    }
+  ],
+  "assertionMethod": [
+    "did:web:did.example.org#key-1",
+    "did:web:did.example.org#key-1-multikey"
+  ],
+  "authentication": [
+    "did:web:did.example.org#key-1"
+  ]
+}
